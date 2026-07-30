@@ -1,0 +1,54 @@
+local StarterGui = game:GetService("StarterGui")
+local Workspace = game:GetService("Workspace")
+local LocalPlayer = Players.LocalPlayer
+-- Function to handle screen notifications safely across all devices
+local function sendNotification(title, text)
+pcall(function()
+StarterGui:SetCore("SendNotification", {
+Title = title,
+Text = text,
+Duration = 2
+})
+end)
+end
+-- Core function to modify and lock ProximityPrompt properties permanently
+local function initializePrompt(prompt)
+if prompt:IsA("ProximityPrompt") then
+prompt.HoldDuration = 0
+-- Event listener to block the game from resetting the HoldDuration
+local propertyConnection
+propertyConnection = prompt:GetPropertyChangedSignal("HoldDuration"):Connect(function()
+if not prompt or not prompt.Parent then
+if propertyConnection then
+propertyConnection:Disconnect()
+end
+return
+end
+if prompt.HoldDuration > 0 then
+prompt.HoldDuration = 0
+end
+end)
+end
+end
+-- Full workspace scanner function
+local function scanWorkspace()
+local descendants = Workspace:GetDescendants()
+for i = 1, #descendants do
+initializePrompt(descendants[i])
+end
+end
+-- Dynamic listeners for real-time optimization
+Workspace.DescendantAdded:Connect(initializePrompt)
+ProximityPromptService.PromptShown:Connect(initializePrompt)
+-- Chat command listener for system override
+if LocalPlayer then
+LocalPlayer.Chatted:Connect(function(message)
+if string.lower(message) == "e" then
+scanWorkspace()
+sendNotification("Instant E", "System successfully synchronized!")
+end
+end)
+end
+-- Initial execution setup
+scanWorkspace()
+sendNotification("Instant E", "Script initialize
